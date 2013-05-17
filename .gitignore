@@ -1,3 +1,5 @@
 *.pyc
 dottest.png
 dottest.dot
+output_dot.py
+output.sh
