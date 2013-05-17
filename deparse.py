@@ -11,11 +11,13 @@ class Parser(object):
         self._parser = CaboCha.Parser(*args)
         self._tree = self._parser.parse(s)
 
+    @property
+    def tree(self):
+        return Tree(self._tree)
+
     def __iter__(self):
         self._chunk_index = 0
         return self
-
-    #def parse(self, s):
 
     def next(self):
         if self._chunk_index >= self._tree.chunk_size():
@@ -23,16 +25,39 @@ class Parser(object):
         else:
             ind = self._chunk_index
             self._chunk_index += 1
-            return Chunk(self._tree,
-                         ind)
+            return Chunk(self._tree.chunk(ind), ind, self._tree)
+
+
+class Tree(object):
+    """Wrapper class for CaboCha.Tree"""
+    def __init__(self, tree):
+        self._tree = tree
+
+    def __getattr__(self, name):
+        return getattr(self._tree, name)
+
+    def __iter__(self):
+        self._chunk_index = 0
+        return self
+
+    def next(self):
+        if self._chunk_index >= self.chunk_size():
+            raise StopIteration
+        else:
+            ind = self._chunk_index
+            self._chunk_index += 1
+            return Chunk(self.chunk(ind), ind, self._tree)
 
 
 class Chunk(object):
-
-    def __init__(self, tree, i):
-        self._chunk = tree.chunk(i)
+    """Wrapper class for CaboCha.Chunk"""
+    def __init__(self, chunk, i, tree):
+        self._chunk = chunk
         self._id = i
         self._tree = tree
+
+    def __getattr__(self, name):
+        return getattr(self._chunk, name)
 
     def __iter__(self):
         self._token_index = 0
@@ -44,9 +69,8 @@ class Chunk(object):
         else:
             ind = self._token_index
             self._token_index += 1
-            pos = self._chunk.token_pos + ind
-            return Token(self._tree.token(pos),
-                         pos)
+            pos = self.token_pos + ind
+            return Token(self._tree.token(pos), pos)
 
     @property
     def id(self):
@@ -56,38 +80,9 @@ class Chunk(object):
     def chunk(self):
         return self._chunk
 
-    # CaboCha.Chunk propaties
     @property
-    def additional_info(self):
-        return self._chunk.additional_info
-
-    @property
-    def feature_list_size(self):
-        return self._chunk.feature_list_size
-
-    @property
-    def func_pos(self):
-        return self._chunk.func_pos
-
-    @property
-    def head_pos(self):
-        return self._chunk.head_pos
-
-    @property
-    def link(self):
-        return self._chunk.link
-
-    @property
-    def score(self):
-        return self._chunk.score
-
-    @property
-    def token_pos(self):
-        return self._chunk.token_pos
-
-    @property
-    def token_size(self):
-        return self._chunk.token_size
+    def tree(self):
+        return self._tree
 
     def __unicode__(self):
         form = u'<chunk id={} link={} rel={} score={} head={} func={}>'
@@ -102,40 +97,26 @@ class Chunk(object):
     def __str__(self):
         return self.__unicode__().encode('utf-8')
 
+    def __repr__(self):
+        return self.__str__()
+
 
 class Token(object):
-
+    """Wrapper class for CaboCha.Token"""
     def __init__(self, token, i):
         self._token = token
         self._id = i
 
-    @property
-    def additional_info(self):
-        return self._token.additional_info
+    def __getattr__(self, name):
+        if name == "feature":
+            return self._token.feature.decode('utf-8')
+        elif name == "surface":
+            return self._token.surface.decode('utf-8')
+        return getattr(self._token, name)
 
     @property
-    def chunk(self):
-        return self._token.chunk
-
-    @property
-    def feature(self):
-        return self._token.feature.decode('utf-8')
-
-    @property
-    def feature_list_size(self):
-        return self._token.feature_list_size
-
-    @property
-    def ne(self):
-        return self._token.ne
-
-    @property
-    def normalized_surface(self):
-        return self._token.normalized_surface.decode('utf-8')
-
-    @property
-    def surface(self):
-        return self._token.surface.decode('utf-8')
+    def id(self):
+        return self._id
 
     def __unicode__(self):
         fmt = u'<tok id={} feature={} ne={}>{}</tok>'
@@ -146,6 +127,9 @@ class Token(object):
 
     def __str__(self):
         return self.__unicode__().encode('utf-8')
+
+    def __repr__(self):
+        return self.__str__()
 
 
 if __name__ == '__main__':
