@@ -9,7 +9,7 @@ class Parser(object):
 
     def __init__(self, s, *args):
         self._parser = CaboCha.Parser(*args)
-        self._tree = self._parser.parse(s)
+        self._tree = self._parser.parse(s.encode('utf-8'))
 
     @property
     def tree(self):
@@ -134,7 +134,7 @@ class Token(object):
 
 if __name__ == '__main__':
 
-    s = u"兄は今日鍋を食べる予定です。".encode('utf-8')
+    s = u"兄は今日鍋を食べる予定です。"
     parser = Parser(s, '--charset=UTF8')
     for chunk in parser:
         print chunk
